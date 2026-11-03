@@ -1,0 +1,8 @@
+# Install on top of requirements.txt:  pip install -r requirements-ml.txt
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+xgboost>=2.1
+tensorflow>=2.16   # Keras 3. Needs a Python version TensorFlow supports (3.10-3.12 is safest).
+joblib>=1.4
+tzdata             # time-zone data (needed on Windows for Africa/Lagos)

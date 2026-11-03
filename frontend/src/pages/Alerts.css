@@ -1,0 +1,175 @@
+.alerts-page {
+  padding: 30px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Header */
+.alerts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.alerts-header h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #1a1a1a;
+}
+
+.alerts-header p {
+  margin: 5px 0 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.refresh-btn {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.refresh-btn:hover {
+  background-color: #1d4ed8;
+}
+
+/* Summary Cards */
+.alerts-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  margin-bottom: 30px;
+}
+
+.summary-card {
+  background: white;
+  padding: 18px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-card .label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.summary-card .value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.summary-card .value.red {
+  color: #dc2626;
+}
+
+.summary-card .value.orange {
+  color: #d97706;
+}
+
+.summary-card .value.gray {
+  color: #64748b;
+}
+
+/* Table */
+.alerts-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding: 14px 16px;
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #334155;
+}
+
+.alert-id {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Risk Badges */
+.risk-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.risk-high {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.risk-medium {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.risk-low {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-sent {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.status-pending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.status-failed {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* View Button */
+.view-btn {
+  background-color: #eff6ff;
+  color: #2563eb;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.view-btn:hover {
+  background-color: #dbeafe;
+}
