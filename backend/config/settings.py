@@ -42,6 +42,15 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("Set DJANGO_SECRET_KEY when DJANGO_DEBUG is off.")
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+# Render tells the app its own public hostname; allow it automatically.
+_render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME", "")
+if _render_host:
+    ALLOWED_HOSTS.append(_render_host)
+
+# Addresses (with https://) allowed to submit forms to the Django admin. Needed when hosted.
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
+if _render_host:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{_render_host}")
 
 # ---------------------------------------------------------------------------
 # Applications
@@ -76,6 +85,14 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# WhiteNoise serves the admin's CSS/JS when hosted. It is optional locally: used only if installed.
+try:
+    import whitenoise  # noqa: F401
+except ImportError:
+    pass
+else:
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
@@ -101,7 +118,12 @@ TEMPLATES = [
 # ---------------------------------------------------------------------------
 # DB_ENGINE=sqlite uses a simple local file (db.sqlite3): no database server to install,
 # good for trying the project out. Leave it unset (or "postgres") for PostgreSQL.
-if os.getenv("DB_ENGINE", "postgres").lower() == "sqlite":
+if os.getenv("DATABASE_URL"):
+    # Hosting (e.g. Render) provides one address that holds every connection detail.
+    from .dburl import parse_database_url
+
+    DATABASES = {"default": parse_database_url(os.environ["DATABASE_URL"])}
+elif os.getenv("DB_ENGINE", "postgres").lower() == "sqlite":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -240,6 +262,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # The host's load balancer handles HTTPS and tells Django through this header.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ---------------------------------------------------------------------------
 # Logging

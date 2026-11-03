@@ -10,8 +10,11 @@ fake phone numbers are not real; set your own in the Django admin before you
 switch SMS_BACKEND to a real provider.
 """
 
+import os
 import zlib
 from decimal import Decimal
+
+from django.conf import settings
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction as db_transaction
@@ -29,6 +32,9 @@ DEMO_USERS = [
 ]
 
 
+DEFAULT_PASSWORD = "Demo-Passw0rd!"
+
+
 def _account_number(name: str) -> str:
     """A stable 10-digit account number for a generated payee name."""
     return f"{zlib.crc32(name.encode()) % 10**10:010d}"
@@ -42,24 +48,37 @@ class Command(BaseCommand):
     help = "Create demo users (admin, analyst, two customers) with transaction history."
 
     def add_arguments(self, parser):
-        parser.add_argument("--password", default="Demo-Passw0rd!", help="password for every demo account")
+        parser.add_argument(
+            "--password",
+            default=os.getenv("DEMO_PASSWORD", DEFAULT_PASSWORD),
+            help="password for every demo account (default: the DEMO_PASSWORD variable, or the built-in demo one)",
+        )
+        parser.add_argument("--users-only", action="store_true", help="create the accounts but no transaction history")
         parser.add_argument("--days", type=int, default=60, help="days of history to generate (default 60)")
         parser.add_argument("--reset", action="store_true", help="delete the demo users' transactions first")
 
     def handle(self, *args, **options):
-        try:
-            import pandas as pd
+        if not settings.DEBUG and options["password"] == DEFAULT_PASSWORD:
+            raise CommandError(
+                "Refusing to create accounts with the well-known demo password on a live site. "
+                "Set the DEMO_PASSWORD environment variable to a strong password."
+            )
 
-            from fraud_engine.data import make_synthetic_data
-        except ImportError as exc:
-            raise CommandError("The demo history needs pandas. Run: pip install -r requirements-ml.txt") from exc
+        history = None
+        if not options["users_only"]:
+            try:
+                import pandas as pd
 
-        history = make_synthetic_data(n_users=len(DEMO_USERS), days=options["days"], seed=7)
-        history = history[history["is_fraud"] == 0].copy()
-        # Slide the history forward so the newest transaction is 30 minutes old. The
-        # model compares a new transaction with "how long since the last one".
-        shift = pd.Timestamp(timezone.now()) - history["timestamp"].max() - pd.Timedelta(minutes=30)
-        history["timestamp"] = history["timestamp"] + shift
+                from fraud_engine.data import make_synthetic_data
+            except ImportError as exc:
+                raise CommandError("The demo history needs pandas. Run: pip install -r requirements-ml.txt") from exc
+
+            history = make_synthetic_data(n_users=len(DEMO_USERS), days=options["days"], seed=7)
+            history = history[history["is_fraud"] == 0].copy()
+            # Slide the history forward so the newest transaction is 30 minutes old. The
+            # model compares a new transaction with "how long since the last one".
+            shift = pd.Timestamp(timezone.now()) - history["timestamp"].max() - pd.Timedelta(minutes=30)
+            history["timestamp"] = history["timestamp"] + shift
 
         with db_transaction.atomic():
             for index, (email, first, last, role, phone) in enumerate(DEMO_USERS):
@@ -78,6 +97,9 @@ class Command(BaseCommand):
                     user.set_password(options["password"])
                     user.save()
 
+                if history is None:
+                    self.stdout.write(f"  {email}: account ready")
+                    continue
                 if options["reset"]:
                     Transaction.objects.filter(user=user).delete()  # also removes their detections and alerts
                 if Transaction.objects.filter(user=user).exists():
@@ -106,7 +128,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("\nDemo accounts (all use the same password):"))
         for email, _, _, role, _ in DEMO_USERS:
             self.stdout.write(f"  {email:<22} {role}")
-        self.stdout.write(f"  password: {options['password']}")
+        if settings.DEBUG:
+            self.stdout.write(f"  password: {options['password']}")
         self.stdout.write(
             "\nNext: start the backend and the dashboard, sign in, and use 'Send a test transaction'."
         )
