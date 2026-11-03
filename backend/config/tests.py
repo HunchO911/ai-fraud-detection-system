@@ -78,3 +78,14 @@ class AdminSmokeTests(TestCase):
         self.assertEqual(self.result.review_status, DetectionResult.ReviewStatus.CONFIRMED_FRAUD)
         self.assertEqual(self.result.reviewed_by, self.admin)
         self.assertIsNotNone(self.result.reviewed_at)
+
+
+class HealthCheckTests(TestCase):
+    def test_public_and_answers_ok(self):
+        for method in ("get", "head"):
+            response = getattr(self.client, method)("/api/health/")
+            self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get("/api/health/").json(), {"status": "ok"})
+
+    def test_post_is_refused(self):
+        self.assertEqual(self.client.post("/api/health/").status_code, 405)
