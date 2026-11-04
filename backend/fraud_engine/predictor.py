@@ -11,11 +11,12 @@ The returned keys line up with the detection.DetectionResult model fields.
 """
 
 import json
+import logging
+import os
 import time
 from functools import lru_cache
 from pathlib import Path
 
-import joblib
 import numpy as np
 import pandas as pd
 
@@ -23,27 +24,28 @@ from .config import ARTIFACTS_DIR, RAW_COLUMNS, SEQUENCE_LENGTH, TABULAR_FEATURE
 from .features import build_features, build_sequences
 from .hybrid import combine
 
-_REQUIRED_FILES = (
-    "xgboost_model.json",
-    "lstm_model.keras",
-    "sequence_scaler.joblib",
-    "meta_model.joblib",
-    "metadata.json",
-)
+logger = logging.getLogger(__name__)
+
+# Always needed: the XGBoost model and its description.
+_BASE_FILES = ("xgboost_model.json", "metadata.json")
+# The neural part comes in two forms. The full one needs TensorFlow (training computer);
+# the lite one is one small file that needs only NumPy (web server). See lite.py.
+_FULL_FILES = ("lstm_model.keras", "sequence_scaler.joblib", "meta_model.joblib")
+_LITE_FILE = "lite_model.npz"
 
 
 class FraudPredictor:
     def __init__(self, artifacts_dir=ARTIFACTS_DIR):
         artifacts_dir = Path(artifacts_dir)
-        missing = [name for name in _REQUIRED_FILES if not (artifacts_dir / name).exists()]
-        if missing:
+        has = lambda names: all((artifacts_dir / name).exists() for name in names)  # noqa: E731
+        missing_base = [name for name in _BASE_FILES if not (artifacts_dir / name).exists()]
+        if missing_base or not (has(_FULL_FILES) or has((_LITE_FILE,))):
             raise FileNotFoundError(
-                f"Missing model files {missing} in {artifacts_dir}. "
-                "Train first with:  python -m fraud_engine.train"
+                f"Missing model files in {artifacts_dir} (need {list(_BASE_FILES)} plus either "
+                f"{list(_FULL_FILES)} or {_LITE_FILE}). Train first with:  python -m fraud_engine.train"
             )
 
         # Heavy libraries are imported here so merely importing this module is cheap.
-        from tensorflow import keras
         from xgboost import XGBClassifier
 
         self.metadata = json.loads((artifacts_dir / "metadata.json").read_text())
@@ -53,9 +55,36 @@ class FraudPredictor:
 
         self._xgb = XGBClassifier()
         self._xgb.load_model(str(artifacts_dir / "xgboost_model.json"))
-        self._lstm = keras.models.load_model(artifacts_dir / "lstm_model.keras")
-        self._scaler = joblib.load(artifacts_dir / "sequence_scaler.joblib")
-        self._meta_model = joblib.load(artifacts_dir / "meta_model.joblib")
+        self._load_neural_part(artifacts_dir, has)
+
+    def _load_neural_part(self, artifacts_dir, has) -> None:
+        """
+        FRAUD_MODEL_BACKEND = "auto" (default): use TensorFlow when it and the full files are
+        there, else the lite copy. "lite" forces the lite copy (what the web server uses).
+        """
+        choice = os.getenv("FRAUD_MODEL_BACKEND", "auto").strip().lower()
+        if choice != "lite" and has(_FULL_FILES):
+            try:
+                import joblib
+                from tensorflow import keras
+
+                self._lstm = keras.models.load_model(artifacts_dir / "lstm_model.keras")
+                self._scaler = joblib.load(artifacts_dir / "sequence_scaler.joblib")
+                self._meta_model = joblib.load(artifacts_dir / "meta_model.joblib")
+                self.neural_backend = "tensorflow"
+                return
+            except ImportError:
+                if not has((_LITE_FILE,)):
+                    raise
+                logger.info("TensorFlow is not installed; using the lite model instead.")
+        if not has((_LITE_FILE,)):
+            raise FileNotFoundError(
+                f"{_LITE_FILE} not found in {artifacts_dir}. Create it with:  python -m fraud_engine.export_lite"
+            )
+        from .lite import load_lite
+
+        self._lstm, self._scaler, self._meta_model = load_lite(artifacts_dir / _LITE_FILE)
+        self.neural_backend = "lite"
 
     def predict(self, history: pd.DataFrame) -> dict:
         """

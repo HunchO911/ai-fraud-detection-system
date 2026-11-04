@@ -7,9 +7,12 @@ on. This is usually better than a fixed 50/50 average because it learns, for
 example, that the LSTM deserves more weight when it is confident.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_recall_curve
+
+if TYPE_CHECKING:  # scikit-learn is only needed for training, not for scoring on the server
+    from sklearn.linear_model import LogisticRegression
 
 
 def _logit(p) -> np.ndarray:
@@ -23,8 +26,10 @@ def stack_features(xgb_scores, lstm_scores) -> np.ndarray:
     return np.column_stack([_logit(xgb_scores), _logit(lstm_scores)])
 
 
-def fit_meta_model(xgb_scores, lstm_scores, y_true) -> LogisticRegression:
+def fit_meta_model(xgb_scores, lstm_scores, y_true) -> "LogisticRegression":
     """Learn the combination. Use scores from data the base models never trained on."""
+    from sklearn.linear_model import LogisticRegression
+
     return LogisticRegression(max_iter=1000).fit(stack_features(xgb_scores, lstm_scores), y_true)
 
 
@@ -35,6 +40,8 @@ def combine(meta_model, xgb_scores, lstm_scores) -> np.ndarray:
 
 def best_f1_threshold(y_true, scores) -> float:
     """The score cut-off with the best balance of precision and recall (F1)."""
+    from sklearn.metrics import precision_recall_curve
+
     precision, recall, thresholds = precision_recall_curve(y_true, scores)
     precision, recall = precision[:-1], recall[:-1]  # the last point has no threshold
     f1 = 2 * precision * recall / np.clip(precision + recall, 1e-12, None)
@@ -51,6 +58,8 @@ def suggest_risk_thresholds(y_true, scores, high: float) -> dict:
       critical the lowest score above `high` where at least 90% of alerts are
                real fraud; falls back to halfway between `high` and 1
     """
+    from sklearn.metrics import precision_recall_curve
+
     precision, _, thresholds = precision_recall_curve(y_true, scores)
     reliable = (precision[:-1] >= 0.9) & (thresholds >= high)
     critical = float(thresholds[reliable].min()) if reliable.any() else high + (1 - high) / 2

@@ -7,9 +7,10 @@ can't "cheat" during training, and live scoring (which only has the past)
 produces the same numbers training did.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
 from .config import (
     CHANNELS,
@@ -21,6 +22,9 @@ from .config import (
     SEQUENCE_LENGTH,
     TRANSACTION_TYPES,
 )
+
+if TYPE_CHECKING:  # scikit-learn is only needed for training, not for scoring on the server
+    from sklearn.preprocessing import StandardScaler
 
 _EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
 _DEFAULT_GAP_SECONDS = 7 * 24 * 3600  # "time since last transaction" for a customer's first one
@@ -137,12 +141,14 @@ def build_features(raw: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def fit_sequence_scaler(train_features: pd.DataFrame) -> StandardScaler:
+def fit_sequence_scaler(train_features: pd.DataFrame) -> "StandardScaler":
     """Learn mean/std of the continuous LSTM inputs. Fit on TRAINING rows only."""
+    from sklearn.preprocessing import StandardScaler
+
     return StandardScaler().fit(train_features[SEQUENCE_CONTINUOUS].to_numpy(dtype=float))
 
 
-def build_sequences(df: pd.DataFrame, scaler: StandardScaler) -> np.ndarray:
+def build_sequences(df: pd.DataFrame, scaler: "StandardScaler") -> np.ndarray:
     """
     For every transaction, the customer's last SEQUENCE_LENGTH transactions
     (itself last), shape (n_rows, SEQUENCE_LENGTH, n_features).

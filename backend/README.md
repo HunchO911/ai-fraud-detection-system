@@ -188,6 +188,26 @@ from *critical*, to the customer and to analysts/admins. A user's own
 - Set the `FRONTEND_URL` in `.env` to where the dashboard runs; analyst emails link to it.
 - The dashboard runs on `http://localhost:5173`, already in `CORS_ALLOWED_ORIGINS`.
 
+## 8. Put the trained model on the live site
+
+TensorFlow is too big for a small web host, so the server uses a lightweight copy of the
+neural part (plain NumPy). Steps, on the computer where you trained the model:
+
+```bash
+python -m fraud_engine.export_lite     # writes ml_artifacts/lite_model.npz and CHECKS it
+```
+
+It prints the largest difference between the original and the copy and must end with
+`OK: the lite copy matches the original.` If it does not, do not upload.
+
+Three small files in `ml_artifacts/` are allowed through `.gitignore` and are uploaded:
+`xgboost_model.json`, `metadata.json`, `lite_model.npz`. Then `git add .`, `git commit`, `git push`.
+The live server sets `FRAUD_MODEL_BACKEND=lite` (see `render.yaml`), so it loads the lite copy.
+
+Every deploy rebuilds the demo accounts (`seed_demo --reset`): their password becomes
+`DEMO_PASSWORD` and their transaction history is regenerated to end shortly before the
+deploy. Before a presentation, press **Manual Deploy** on Render so the history is fresh.
+
 ## What comes next
 
 - Move alert sending to a task queue (Celery) for production traffic

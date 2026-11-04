@@ -6,6 +6,11 @@ venv/
 db.sqlite3
 staticfiles/
 media/
-ml_artifacts/
+# Trained model: keep the big training files out of git, but let the three small files the
+# live server needs through (see README section 8).
+ml_artifacts/*
+!ml_artifacts/xgboost_model.json
+!ml_artifacts/metadata.json
+!ml_artifacts/lite_model.npz
 .idea/
 .vscode/
