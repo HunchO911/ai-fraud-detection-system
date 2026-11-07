@@ -174,6 +174,16 @@ Development default: both are printed in the terminal running `runserver`
 password) and `SMS_BACKEND=termii` with `TERMII_API_KEY` and `TERMII_SENDER_ID`.
 The Termii call follows their documented API but has not been run against the live
 service from here: send yourself one test SMS before relying on it.
+**Email options** (set in `.env` locally, or in Render's Environment tab when hosted):
+
+- *Zoho Mail SMTP* (works on your own computer): `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`,
+  `EMAIL_HOST=smtp.zoho.com`, port 587 with TLS, your Zoho address and an app password.
+  **Free Render blocks outbound SMTP ports (25/465/587), so this will not work from the free live site.**
+- *Resend over HTTPS* (works on free Render): `EMAIL_BACKEND=alerts.email_backends.ResendEmailBackend`,
+  `RESEND_API_KEY`, `DEFAULT_FROM_EMAIL`.
+- *Demo redirects*: the demo users have fake addresses. Set `ALERT_EMAIL_REDIRECT=<your inbox>` (and
+  optionally `ALERT_SMS_REDIRECT=<your phone>`) to deliver every alert there. The subject says who it was for.
+
 Failed deliveries are recorded on the alert; retry them with
 `python manage.py retry_failed_alerts`.
 

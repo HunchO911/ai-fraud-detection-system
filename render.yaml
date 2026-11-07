@@ -12,12 +12,13 @@ services:
     rootDir: backend
     plan: free
     # Install libraries, collect the admin's static files, create/update the tables,
-    # and (optionally) create the demo accounts.
+    # and (optionally) rebuild the demo accounts with fresh transaction history. The model
+    # judges a payment against the customer's past, so the history must be recent.
     buildCommand: >-
       pip install -r requirements.txt
       && python manage.py collectstatic --no-input
       && python manage.py migrate --no-input
-      && (test "$SEED_DEMO_USERS" != "true" || python manage.py seed_demo --users-only)
+      && (test "$SEED_DEMO_USERS" != "true" || python manage.py seed_demo --reset)
     healthCheckPath: /api/health/
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 60
     envVars:
@@ -33,6 +34,9 @@ services:
         value: "false"
       - key: FRAUD_WARMUP
         value: "false"
+      # Use the small NumPy copy of the model (lite_model.npz); TensorFlow is not installed here.
+      - key: FRAUD_MODEL_BACKEND
+        value: lite
       - key: SEED_DEMO_USERS
         value: "true"
       # You fill these in on Render's website (they are not stored in the repo):

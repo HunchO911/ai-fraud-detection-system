@@ -227,6 +227,14 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_TIMEOUT = 10  # seconds; a slow mail server must not hang the API
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Fraud Alerts <alerts@example.com>")
+# HTTPS email (works on free Render, where SMTP ports are blocked). See alerts/email_backends.py.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+
+# DEMO SWITCHES: when set, EVERY alert is delivered here instead of to the customer or analyst
+# (the email subject then starts with who it was meant for). Lets you watch all alerts in one
+# inbox or phone while the demo accounts use made-up addresses. Leave empty for real use.
+ALERT_EMAIL_REDIRECT = os.getenv("ALERT_EMAIL_REDIRECT", "")
+ALERT_SMS_REDIRECT = os.getenv("ALERT_SMS_REDIRECT", "")
 
 SMS_BACKEND = os.getenv("SMS_BACKEND", "console")  # "console" or "termii"
 TERMII_API_KEY = os.getenv("TERMII_API_KEY", "")

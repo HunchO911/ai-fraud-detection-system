@@ -113,18 +113,23 @@ def deliver(alert: Alert) -> None:
     """Send one alert and record the outcome on it. Never raises."""
     try:
         if alert.channel == Alert.Channel.EMAIL:
+            to = settings.ALERT_EMAIL_REDIRECT or alert.destination
+            subject = alert.subject
+            if settings.ALERT_EMAIL_REDIRECT:  # demo mode: say who this was really meant for
+                subject = f"[for {alert.destination}] {subject}"
             message = EmailMultiAlternatives(
-                subject=alert.subject,
+                subject=subject,
                 body=alert.message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[alert.destination],
+                to=[to],
             )
             message.attach_alternative(_html(alert.message), "text/html")
             if message.send(fail_silently=False) == 0:
                 raise RuntimeError("The email backend reported that nothing was sent.")
             alert.mark_sent()
         else:
-            alert.mark_sent(get_sms_backend().send(alert.destination, alert.message))
+            number = settings.ALERT_SMS_REDIRECT or alert.destination
+            alert.mark_sent(get_sms_backend().send(number, alert.message))
     except Exception as exc:  # noqa: BLE001 - anything can go wrong on the network
         logger.warning("Alert %s (%s) failed: %s", alert.pk, alert.channel, exc)
         alert.mark_failed(str(exc))
