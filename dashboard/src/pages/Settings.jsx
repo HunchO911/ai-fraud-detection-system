@@ -101,7 +101,7 @@ export default function Settings() {
             <div className="panel-head"><h2 id="levels-title">Risk levels</h2></div>
             <div className="panel-body stack" style={{ gap: 18 }}>
               <p className="muted">
-                The model gives each transaction a fraud probability. These points decide where it becomes medium, high or critical risk.
+                Each payment gets a fraud score from 0% to 100%. These points decide where it becomes medium, high or critical risk.
               </p>
               <div className="form-grid">
                 {THRESHOLDS.map(([key, text]) => (
@@ -127,6 +127,9 @@ export default function Settings() {
           <section className="panel" aria-labelledby="who-title">
             <div className="panel-head"><h2 id="who-title">Alerts</h2></div>
             <div className="panel-body">
+              <p className="muted" style={{ marginBottom: 6 }}>
+                Alerts always appear inside this dashboard (the bell at the top, and the Alerts page). Email and SMS are optional extras and are off by default.
+              </p>
               {FLAGS.map(([key, title, hint]) => (
                 <label key={key} className="toggle">
                   <input type="checkbox" checked={form[key]} onChange={(e) => set(key, e.target.checked)} />
@@ -157,9 +160,20 @@ export default function Settings() {
         </div>
 
         <section className="panel" aria-labelledby="model-title">
-          <div className="panel-head"><h2 id="model-title">AI model</h2></div>
+          <div className="panel-head"><h2 id="model-title">{model.engine === "rules" ? "How payments are checked" : "AI model"}</h2></div>
           <div className="panel-body">
-            {model.available ? (
+            {model.engine === "rules" ? (
+              <>
+                <p>{model.description}</p>
+                <dl className="meta-list" style={{ marginTop: 14 }}>
+                  <div><dt>Check</dt><dd>History check</dd></div>
+                  <div><dt>Version</dt><dd>{model.version}</dd></div>
+                </dl>
+                <p className="muted" style={{ marginTop: 14, fontSize: "0.88rem" }}>
+                  See the Customers page for what is normal for each customer.
+                </p>
+              </>
+            ) : model.available ? (
               <dl className="meta-list">
                 <div><dt>Version</dt><dd>{model.version}</dd></div>
                 <div><dt>Trained</dt><dd>{dateTime(model.trained_at)}</dd></div>

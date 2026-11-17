@@ -1,5 +1,5 @@
 """
-Scoring: run the trained model on a transaction and store the verdict.
+Scoring: judge a transaction (history check, or the trained model) and store the verdict.
 
     process_transaction(txn)   score it, then send alerts. Called as soon as a
                                new transaction is saved. It never raises, so a
@@ -30,15 +30,35 @@ class ModelNotAvailable(Exception):
 
 def get_predictor():
     """
-    The shared model predictor. Imported lazily so Django starts quickly and
-    pandas / TensorFlow are only loaded the first time something is scored.
+    The detector that scores transactions: the history check (default) or the trained AI model,
+    chosen by FRAUD_ENGINE in settings. Imported lazily so Django starts quickly.
     """
+    if settings.FRAUD_DETECTION.get("ENGINE", "rules") != "ml":
+        from fraud_engine.rules import RulesPredictor
+
+        return RulesPredictor()
     try:
         from fraud_engine.predictor import get_predictor as load
 
         return load()
     except (FileNotFoundError, ImportError) as exc:
         raise ModelNotAvailable(str(exc)) from exc
+
+
+def is_trusted(txn: Transaction) -> bool:
+    """
+    Is this past transaction part of the customer's NORMAL behaviour? Yes when it was approved
+    as low risk (or never scored), or an analyst cleared it as a false alarm. A flagged, blocked
+    or merely "medium" payment is not trusted, so one odd payment can't teach the system that odd is normal.
+    """
+    if txn.status != Transaction.Status.APPROVED:
+        return False
+    detection = getattr(txn, "detection_result", None)
+    return (
+        detection is None
+        or detection.risk_level == DetectionResult.RiskLevel.LOW
+        or detection.review_status == DetectionResult.ReviewStatus.FALSE_POSITIVE
+    )
 
 
 def build_history(txn: Transaction):
@@ -51,7 +71,8 @@ def build_history(txn: Transaction):
 
     cfg = settings.FRAUD_DETECTION
     earlier = (
-        Transaction.objects.filter(
+        Transaction.objects.select_related("detection_result")
+        .filter(
             user_id=txn.user_id,
             timestamp__gte=txn.timestamp - timedelta(days=cfg["HISTORY_DAYS"]),
             timestamp__lte=txn.timestamp,
@@ -71,6 +92,8 @@ def build_history(txn: Transaction):
                 "device_id": t.device_id,
                 "country": t.country,
                 "counterparty_account": t.counterparty_account,
+                "merchant_category": t.merchant_category,  # what the money is for (the history check uses it)
+                "trusted": is_trusted(t),                  # counts as "normal for them"? (see is_trusted)
             }
             for t in rows
         ]

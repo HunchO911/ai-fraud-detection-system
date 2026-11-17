@@ -166,6 +166,16 @@ Restart the server after training: the model is loaded once and kept in memory.
 | `GET, PATCH /api/settings/` | admin | Risk thresholds, alert channels and audiences, model status |
 | `GET /api/alerts/` | analyst, admin | Delivery log (email / SMS status) |
 
+**How payments are checked (history check)**
+
+By default (`FRAUD_ENGINE=rules`) every payment is compared with the customer's own past, in
+`fraud_engine/rules.py`: the largest payment of the same kind they have made, devices, countries and
+accounts they have used, time of day and speed. It needs no training and no model files. The points
+are explained at the top of that file; `detection/demo_data.py` holds the three demo customers and
+`docs/DEMO_HISTORY.md` lists what each amount does. Set `FRAUD_ENGINE=ml` to use the trained
+XGBoost + LSTM model instead. Alerts appear inside the dashboard (the bell and the Alerts page); email
+and SMS are optional extras.
+
 **Email and SMS**
 
 Development default: both are printed in the terminal running `runserver`

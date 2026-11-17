@@ -6,6 +6,7 @@ import { Empty, Loading } from "./components/States.jsx";
 import Login from "./pages/Login.jsx";
 import Live from "./pages/Live.jsx";
 import Alerts from "./pages/Alerts.jsx";
+import Customers from "./pages/Customers.jsx";
 import AlertDetail from "./pages/AlertDetail.jsx";
 import Settings from "./pages/Settings.jsx";
 
@@ -33,6 +34,7 @@ function Screens() {
   if (path === "/") page = <Live />;
   else if (path === "/alerts") page = isStaff ? <Alerts /> : <NoAccess text="Alerts are for analysts and administrators." />;
   else if (detail) page = isStaff ? <AlertDetail id={detail.id} /> : <NoAccess text="Alerts are for analysts and administrators." />;
+  else if (path === "/customers") page = isStaff ? <Customers /> : <NoAccess text="Customers are for analysts and administrators." />;
   else if (path === "/settings") page = isAdmin ? <Settings /> : <NoAccess text="Only administrators can change settings." />;
   else page = <Empty title="Page not found">Use the menu above to go back.</Empty>;
 

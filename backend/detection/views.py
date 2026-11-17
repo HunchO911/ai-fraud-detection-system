@@ -5,10 +5,12 @@ Dashboard API.
     GET  /api/detections/<id>/         one alert in full: scores, reasons, alerts sent, review
     POST /api/detections/<id>/review/  confirm fraud / mark false positive / reopen
     GET  /api/dashboard/stats/         the last 24 hours at a glance
+    GET  /api/customers/               what is normal for each customer (their history profile)
     GET  /api/settings/                administrator settings and model status
     PATCH /api/settings/               change them
 """
 
+import os
 from datetime import timedelta
 
 from django.db.models import Count, Q
@@ -133,6 +135,54 @@ class StatsView(APIView):
                 "hourly": hourly,
             }
         )
+
+
+class CustomerProfilesView(APIView):
+    """
+    GET /api/customers/   what is normal for each customer (see profiles.py).
+
+    Analysts and administrators get every customer (this feeds the "Make a payment" form
+    and the "what will be flagged" guide); a customer gets only their own profile.
+    """
+
+    def get(self, request):
+        from authentication.models import User
+
+        from .profiles import customer_profile
+
+        if request.user.is_analyst_or_admin:
+            users = User.objects.filter(role=User.Role.CUSTOMER, is_active=True).order_by("first_name", "email")
+        else:
+            users = User.objects.filter(pk=request.user.pk)
+        return Response([customer_profile(u) for u in users])
+
+
+class DemoResetView(APIView):
+    """
+    POST /api/demo/reset/   put the three demo customers back to their original history.
+
+    Admin only, and only in DEMO_MODE. Handy between presentations: it deletes the payments
+    made during the demo, so the numbers in the presenter's guide are true again. Passwords stay as they are.
+    """
+
+    permission_classes = [IsAdminRole]
+
+    def post(self, request):
+        from io import StringIO
+
+        from django.conf import settings
+        from django.core.management import call_command
+        from rest_framework.exceptions import PermissionDenied
+
+        if not settings.DEMO_MODE:
+            raise PermissionDenied("Demo mode is switched off.")
+        # Existing accounts keep their passwords. A password is only used if an account is missing,
+        # so use the configured one, or a random one: never the well-known demo password.
+        import secrets
+
+        password = os.getenv("DEMO_PASSWORD") or secrets.token_urlsafe(16)
+        call_command("seed_demo", "--reset", "--keep-passwords", "--password", password, stdout=StringIO())
+        return Response({"status": "reset"})
 
 
 class SettingsView(generics.RetrieveUpdateAPIView):

@@ -209,6 +209,11 @@ FRAUD_DETECTION = {
     # How much of a customer's past the model gets to see when scoring.
     "HISTORY_DAYS": 90,
     "HISTORY_MAX_ROWS": 1000,
+    # Which detector scores transactions:
+    #   "rules" (default): the history check in fraud_engine/rules.py. Compares each payment with
+    #                      the customer's own past. Needs no training and no model files.
+    #   "ml":              the trained XGBoost + LSTM model (needs ml_artifacts/, see README).
+    "ENGINE": os.getenv("FRAUD_ENGINE", "rules").strip().lower(),
     # Load the trained model in the background when `runserver` starts, so the
     # first transaction is not slow. Set FRAUD_WARMUP=false to turn it off.
     "WARMUP": env_bool("FRAUD_WARMUP", True),
@@ -249,6 +254,11 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 # the mail server or SMS provider is slow. Turn off (ALERTS_ASYNC=false) to send
 # inside the request. For heavy traffic, move this to a task queue such as Celery.
 ALERTS_ASYNC = env_bool("ALERTS_ASYNC", True)
+
+# DEMO MODE: lets an analyst or admin submit a payment ON BEHALF OF a demo customer (the dashboard's
+# "Make a payment" form), so one login is enough to show all three customers. Turn it off
+# (DEMO_MODE=false) for a real deployment, where staff must never act as a customer.
+DEMO_MODE = env_bool("DEMO_MODE", True)
 
 # ---------------------------------------------------------------------------
 # Internationalisation

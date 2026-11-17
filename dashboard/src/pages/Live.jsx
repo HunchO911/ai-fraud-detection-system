@@ -6,7 +6,7 @@ import { usePolling } from "../lib/usePolling.js";
 import { clock, label, money } from "../lib/format.js";
 import PulseStrip from "../components/PulseStrip.jsx";
 import RiskBadge from "../components/RiskBadge.jsx";
-import TestTransaction from "../components/TestTransaction.jsx";
+import PaymentForm from "../components/PaymentForm.jsx";
 import { Empty, ErrorNotice, Loading } from "../components/States.jsx";
 
 const STATUS = { pending: "Scoring", approved: "Approved", flagged: "Flagged", blocked: "Blocked" };
@@ -26,7 +26,7 @@ function FeedRow({ txn, staff, fresh, onOpen }) {
       </span>
       <span className="cell-main num feed-amount">{money(txn.amount, txn.currency)}</span>
       <span>
-        <span className="cell-main">{label(txn.transaction_type)}</span>
+        <span className="cell-main">{txn.merchant_name || label(txn.transaction_type)}</span>
         <span className="cell-sub" style={{ display: "block" }}>
           {label(txn.channel)}{place ? ` · ${place}` : ""}
         </span>
@@ -50,7 +50,7 @@ function FeedRow({ txn, staff, fresh, onOpen }) {
 }
 
 export default function Live() {
-  const { user, isStaff } = useAuth();
+  const { isStaff } = useAuth();
   const { navigate } = useRoute();
   const feed = usePolling(() => api.transactions({ page_size: 20 }), 3000, []);
   const stats = usePolling(() => api.stats(), 6000, []);
@@ -73,15 +73,10 @@ export default function Live() {
   }, [feed.data]);
 
   const rows = feed.data?.results ?? [];
-  // The "Everyday payment" test copies a normal-looking transaction: the user's own newest
-  // low-risk one if there is one, otherwise anyone's.
-  const isLow = (t) => t.detection?.risk_level === "low";
-  const baseline = rows.find((t) => isLow(t) && t.user_email === user.email) ?? rows.find(isLow);
   const s = stats.data;
   const onSent = () => {
     feed.refresh();
     stats.refresh();
-    // The alert emails are sent a moment after the response; check again shortly.
     setTimeout(() => feed.refresh(), 1500);
   };
 
@@ -113,7 +108,7 @@ export default function Live() {
 
       {s && <PulseStrip hourly={s.hourly} />}
 
-      <TestTransaction baseline={baseline} onSent={onSent} />
+      <PaymentForm onSent={onSent} />
 
       <section className="panel" aria-labelledby="feed-title">
         <div className="panel-head">
@@ -125,7 +120,7 @@ export default function Live() {
         ) : feed.error && !feed.data ? (
           <div className="panel-body"><ErrorNotice error={feed.error} onRetry={feed.refresh} /></div>
         ) : rows.length === 0 ? (
-          <Empty title="No transactions yet">Send a test transaction above and it will appear here.</Empty>
+          <Empty title="No transactions yet">Make a payment above and it will appear here.</Empty>
         ) : (
           <>
             <div className="feed-head" aria-hidden="true">

@@ -8,10 +8,21 @@ are not installed on the web server.
 
 import json
 
+from django.conf import settings
+
 from fraud_engine.config import ARTIFACTS_DIR
+from fraud_engine.rules import MODEL_VERSION
 
 
 def model_info() -> dict:
+    if settings.FRAUD_DETECTION.get("ENGINE", "rules") != "ml":
+        return {
+            "available": True,
+            "engine": "rules",
+            "version": MODEL_VERSION,
+            "description": "Compares every payment with the customer's own history: the usual amount for "
+            "that kind of payment, known devices, countries and payees, time of day and speed.",
+        }
     path = ARTIFACTS_DIR / "metadata.json"
     try:
         meta = json.loads(path.read_text())
@@ -23,6 +34,7 @@ def model_info() -> dict:
     hybrid = next((m for m in meta.get("test_metrics", []) if m.get("model") == "Hybrid"), {})
     return {
         "available": True,
+        "engine": "ml",
         "version": meta.get("model_version"),
         "trained_at": meta.get("trained_at"),
         "data_source": meta.get("data_source"),

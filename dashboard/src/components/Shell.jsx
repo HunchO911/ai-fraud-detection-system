@@ -1,5 +1,6 @@
 import { Link, useRoute } from "../lib/router.jsx";
 import { useAuth } from "../lib/auth.jsx";
+import Notifications from "./Notifications.jsx";
 
 /** The frame around every signed-in page: brand, navigation, who you are, sign out. */
 export default function Shell({ children }) {
@@ -9,6 +10,7 @@ export default function Shell({ children }) {
   const links = [
     { to: "/", text: "Live", show: true, active: path === "/" },
     { to: "/alerts", text: "Alerts", show: isStaff, active: path.startsWith("/alerts") },
+    { to: "/customers", text: "Customers", show: isStaff, active: path === "/customers" },
     { to: "/settings", text: "Settings", show: isAdmin, active: path === "/settings" },
   ].filter((l) => l.show);
 
@@ -28,6 +30,7 @@ export default function Shell({ children }) {
             ))}
           </nav>
           <div className="who">
+            <Notifications />
             <span>
               <strong>{user.full_name || user.email}</strong> · {user.role}
             </span>

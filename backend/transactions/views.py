@@ -1,4 +1,5 @@
-from rest_framework import mixins, viewsets
+from django.conf import settings
+from rest_framework import mixins, serializers, viewsets
 
 from detection.services import process_transaction
 
@@ -31,9 +32,26 @@ class TransactionViewSet(
             return queryset
         return queryset.filter(user=user)
 
+    def _account_holder(self):
+        """
+        Whose transaction this is: the signed-in user, except in DEMO_MODE where staff may send
+        `"on_behalf_of": "<customer email>"` to act as one of the demo customers.
+        """
+        email = str(self.request.data.get("on_behalf_of") or "").strip().lower()
+        if not email:
+            return self.request.user
+        if not (settings.DEMO_MODE and self.request.user.is_analyst_or_admin):
+            raise serializers.ValidationError({"on_behalf_of": "Only staff can do this, and only in demo mode."})
+        from authentication.models import User
+
+        customer = User.objects.filter(email__iexact=email, role=User.Role.CUSTOMER, is_active=True).first()
+        if customer is None:
+            raise serializers.ValidationError({"on_behalf_of": "No customer with that email."})
+        return customer
+
     def perform_create(self, serializer):
         transaction = serializer.save(
-            user=self.request.user,
+            user=self._account_holder(),
             ip_address=self._client_ip(),
         )
         # Run the AI model right away. This also sends the email / SMS alerts when

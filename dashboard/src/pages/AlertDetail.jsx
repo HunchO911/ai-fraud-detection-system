@@ -126,22 +126,31 @@ export default function AlertDetail({ id }) {
               </div>
               <ScoreScale probability={detection.fraud_probability} thresholds={thresholds} />
               <dl className="facts" style={{ marginTop: 22 }}>
-                <Fact term="Pattern model (XGBoost)">{percent(detection.xgboost_score)}</Fact>
-                <Fact term="Sequence model (LSTM)">{percent(detection.lstm_score)}</Fact>
-                <Fact term="Scored in">{`${detection.processing_time_ms} ms`}</Fact>
-                <Fact term="Model version">{detection.model_version}</Fact>
+                {detection.lstm_score != null ? (
+                  <>
+                    <Fact term="Pattern model (XGBoost)">{percent(detection.xgboost_score)}</Fact>
+                    <Fact term="Sequence model (LSTM)">{percent(detection.lstm_score)}</Fact>
+                    <Fact term="Scored in">{`${detection.processing_time_ms} ms`}</Fact>
+                    <Fact term="Model version">{detection.model_version}</Fact>
+                  </>
+                ) : (
+                  <>
+                    <Fact term="Checked by">History check: compared with this customer's own payments</Fact>
+                    <Fact term="Version">{detection.model_version}</Fact>
+                  </>
+                )}
               </dl>
             </div>
           </section>
 
           <section className="panel" aria-labelledby="why-title">
             <div className="panel-head">
-              <h2 id="why-title">Why the model scored it this way</h2>
+              <h2 id="why-title">Why it was scored this way</h2>
               <span className="muted">Red raises the risk, green lowers it</span>
             </div>
             <div className="panel-body">
               {reasons.length === 0 ? (
-                <p className="muted">The model did not report reasons for this score.</p>
+                <p className="muted">No reasons were recorded for this score.</p>
               ) : (
                 <ul className="reasons">
                   {reasons.map((r) => (
@@ -164,7 +173,7 @@ export default function AlertDetail({ id }) {
             <div className="panel-head"><h2 id="notified-title">Notifications sent</h2></div>
             {detection.alerts.length === 0 ? (
               <div className="panel-body muted">
-                No email or SMS was sent for this alert. This happens when the risk level is below the levels set on the Settings page.
+                No email or SMS was sent for this alert. They are switched off or below the level set on the Settings page. The alert itself is shown here and in the bell at the top of every page.
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>

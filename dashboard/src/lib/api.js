@@ -164,6 +164,8 @@ export const api = {
   createTransaction: (body) => request("/api/transactions/", { method: "POST", body }),
 
   stats: () => request("/api/dashboard/stats/"),
+  customers: () => request("/api/customers/"),
+  resetDemo: () => request("/api/demo/reset/", { method: "POST" }),
   detections: (params) => request("/api/detections/", { params }),
   detection: (id) => request(`/api/detections/${id}/`),
   review: (id, body) => request(`/api/detections/${id}/review/`, { method: "POST", body }),

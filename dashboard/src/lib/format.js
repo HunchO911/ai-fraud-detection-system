@@ -9,6 +9,9 @@ export function money(amount, currency = "NGN") {
   }
 }
 
+/** Whole naira with no decimals, for amounts in guides ("₦2,000"). */
+export const naira = (amount) => `₦${Math.round(Number(amount)).toLocaleString("en-NG")}`;
+
 export const percent = (p) => `${Math.round(Number(p) * 100)}%`;
 
 export function clock(iso) {

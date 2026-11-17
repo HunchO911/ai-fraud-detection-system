@@ -188,5 +188,5 @@ class BuildHistoryTests(TestCase):
         self.assertEqual(
             list(frame.columns),
             ["user_id", "timestamp", "amount", "transaction_type", "channel", "device_id", "country",
-             "counterparty_account"],
+             "counterparty_account", "merchant_category", "trusted"],
         )
