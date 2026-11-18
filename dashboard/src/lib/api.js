@@ -6,9 +6,15 @@
  *  - When the access token has expired (401), refreshes it ONCE (even if several
  *    requests fail at the same moment) and replays the request.
  *  - Turns every failure into an ApiError with a message a person can read.
+ *  - In demo mode (VITE_DEMO=true) the same calls are answered inside the browser (lib/demo/).
  */
 
+import { createDemoApi } from "./demo/demoApi.js";
+
 const BASE = (import.meta.env?.VITE_API_URL ?? "").replace(/\/$/, "");
+
+/** Demo mode (VITE_DEMO=true): no server at all. The "API" below runs inside the browser instead. */
+export const DEMO = import.meta.env?.VITE_DEMO === "true";
 const KEY = "fraudwatch.tokens";
 
 let memory = null; // used when localStorage is unavailable
@@ -154,7 +160,7 @@ export async function request(path, options = {}) {
 }
 
 /* ---- The endpoints the dashboard uses, in one place ---- */
-export const api = {
+const serverApi = {
   login: (email, password) =>
     request("/api/auth/login/", { method: "POST", body: { email, password }, auth: false }),
   logout: (refresh) => request("/api/auth/logout/", { method: "POST", body: { refresh } }),
@@ -173,3 +179,5 @@ export const api = {
   settings: () => request("/api/settings/"),
   saveSettings: (body) => request("/api/settings/", { method: "PATCH", body }),
 };
+
+export const api = DEMO ? createDemoApi({ ApiError, getTokens }) : serverApi;

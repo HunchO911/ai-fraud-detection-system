@@ -255,6 +255,9 @@ textarea.input { min-height: 84px; resize: vertical; }
 .meta-list dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 
 
+/* ---------- Demo mode banner ---------- */
+.demo-banner { background: var(--medium-bg); color: var(--medium); text-align: center; font-size: 0.86rem; font-weight: 600; padding: 6px 16px; }
+
 /* ---------- Make a payment ---------- */
 .pay-box { display: grid; gap: 14px; }
 .pay-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }

@@ -28,8 +28,10 @@ Before you start: open the dashboard, sign in as **admin@example.com**, press **
 The exact amounts and results are in `DEMO_HISTORY.md`. Use that list; do not improvise amounts above a customer's usual maximum without checking it, because every Low payment that is accepted becomes part of their normal.
 
 ## Before presenting
-- Press **Reset demo data** on the Customers page (or Manual Deploy on Render 20 to 30 minutes ahead). Open the site once so the server is awake. UptimeRobot keeps it awake.
-- Have the Render URL and the GitHub repo open in case someone asks.
+- Open your Vercel link (or `http://localhost:5173` if you run it on your computer). Sign in as **admin@example.com**. In demo mode any password works.
+- Go to **Customers** and press **Reset demo data**, so every amount in `DEMO_HISTORY.md` is true.
+- Have the GitHub repository open in case someone asks to see the code.
+- The demo keeps its data in the browser you are using. If you open it on another device, you get a fresh copy. Present from one device.
 
 ## Likely questions and honest answers
 
@@ -38,6 +40,9 @@ Be direct. This version uses behavioural profiling with rules: it learns each cu
 
 **"Why rules instead of ML?"**
 They are transparent: every alert explains itself in plain words, which regulators and bank staff require. They work on day one with no training data, and they are fast. The trade-off is that the rules are chosen by hand. ML can find patterns people didn't think of, which is why the ML path is kept as a next step.
+
+**"Is there a real server and database behind the live demo?"**
+Be direct. The public demo link runs in demo mode: the same screens and the same history check run inside the browser, with the three made-up customers, so it needs no server and cannot go down. The full system is a Django REST API with a PostgreSQL database (in the repository, `backend/`), which I run locally. Both use the same rules, and I tested that they give identical scores. In demo mode any password is accepted, which is only acceptable because the data is made up.
 
 **"Is the data real?"**
 No. All three customers and their payments are made-up (`detection/demo_data.py`). No real money moves and no real bank is connected. The phone numbers are fake.
@@ -52,7 +57,7 @@ That is what Medium (allowed) and the analyst review are for. A genuine large pa
 They are held for review. Blocking real customers is costly, so a human decides. That is standard practice. Critical payments could be auto-blocked with a one-line change.
 
 **"Is it secure?"**
-Login uses JWT tokens with refresh. Customers see only their own data and never the score. Staff-only pages are enforced on the server, not just hidden in the browser. The "pay as a customer" feature exists only for the demo (`DEMO_MODE`) and is switched off for a real deployment.
+In the full system, login uses JWT tokens with refresh. Customers see only their own data and never the score. Staff-only pages are enforced on the server, not just hidden in the browser. The "pay as a customer" feature exists only for the demo (`DEMO_MODE`) and is switched off for a real deployment.
 
 **"How would this scale?"**
 The check reads one customer's recent history, which is a fast indexed database query. The server is stateless, so more copies can run behind a load balancer. For millions of customers, the history would be cached.
@@ -64,4 +69,4 @@ The check reads one customer's recent history, which is a fast indexed database 
 - It is a simulation of banking, not a bank.
 
 ## The technology in one line each
-React (dashboard) → Django REST API (backend, JWT login) → PostgreSQL (data) → history check (`fraud_engine/rules.py`) → alerts in the dashboard (bell, pop-ups, Alerts page). Hosted on Render (backend) and Vercel (dashboard).
+React (dashboard) → Django REST API (backend, JWT login) → PostgreSQL (data) → history check (`fraud_engine/rules.py`) → alerts in the dashboard (bell, pop-ups, Alerts page). The public demo is the dashboard alone on Vercel, with the same history check written in JavaScript (`dashboard/src/lib/demo/`) so it needs no server.

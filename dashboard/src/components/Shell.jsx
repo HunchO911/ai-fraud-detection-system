@@ -1,4 +1,5 @@
 import { Link, useRoute } from "../lib/router.jsx";
+import { DEMO } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 import Notifications from "./Notifications.jsx";
 
@@ -16,6 +17,11 @@ export default function Shell({ children }) {
 
   return (
     <>
+      {DEMO && (
+        <div className="demo-banner" role="note">
+          Demo mode: the whole system runs in this browser with made-up customers. No server, no real money.
+        </div>
+      )}
       <header className="shell-header">
         <div className="shell-bar">
           <Link to="/" className="brand">

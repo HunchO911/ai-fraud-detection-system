@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth.jsx";
 import { useRoute } from "../lib/router.jsx";
-import { ApiError } from "../lib/api.js";
+import { ApiError, DEMO } from "../lib/api.js";
 
 const SAMPLE = [
   ["09:41", "Transfer · Ada O.", "₦12,500", false],
@@ -71,7 +71,13 @@ export default function Login() {
               value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
           <button className="btn btn-primary" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-          {import.meta.env?.DEV && (
+          {DEMO && (
+            <p className="demo-hint">
+              Demo mode: any password works. Sign in as <code>admin@example.com</code> to see everything, or as{" "}
+              <code>chidi@example.com</code>, <code>ngozi@example.com</code> or <code>tunde@example.com</code> to see one customer.
+            </p>
+          )}
+          {!DEMO && import.meta.env?.DEV && (
             <p className="demo-hint">
               After <code>python manage.py seed_demo</code>: <code>admin@example.com</code>,{" "}
               <code>analyst@example.com</code> or <code>chidi@example.com</code>, password{" "}

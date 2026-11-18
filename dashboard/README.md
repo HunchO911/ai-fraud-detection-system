@@ -48,3 +48,16 @@ src/lib/risk.js       risk wording, plain-language names for model signals
 src/pages/            Login, Live, Alerts, AlertDetail, Settings
 src/components/       Shell, RiskBadge, ScoreScale, PulseStrip, TestTransaction, ...
 ```
+
+## Demo mode (no server at all)
+
+Set `VITE_DEMO=true` when the dashboard is built and it runs entirely in the browser: the same screens,
+the same three demo customers and the same history check, with no backend and no database. Payments are
+kept in the browser (localStorage); **Reset demo data** on the Customers page puts everything back.
+Any password is accepted for the demo accounts. The JavaScript rules in `src/lib/demo/rules.js` are a
+port of `backend/fraud_engine/rules.py`, and the customers in `src/lib/demo/data.js` are generated from
+`backend/detection/demo_data.py`.
+
+- On Vercel: Project, Settings, Environment Variables, add `VITE_DEMO` = `true`, then redeploy.
+- On your computer: `set VITE_DEMO=true` (PowerShell: `$env:VITE_DEMO="true"`) and `npm run dev`.
+- To use the real backend again, remove the variable (and set `VITE_API_URL`).
